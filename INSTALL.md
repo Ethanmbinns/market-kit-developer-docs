@@ -297,7 +297,9 @@ curl -X POST "https://your-convex-site/api/v1/mailboxes/mailbox_xxx/emails/searc
   -H "Content-Type: application/json" \
   -d '{
     "folder": "all",
-    "q": "order 1042",
+    "from": "orders@example.com",
+    "subject": "Order",
+    "unread": true,
     "limit": 25
   }'
 ```
@@ -339,7 +341,9 @@ tool: search_emails
 args: {
   "mailboxId": "mailbox_123",
   "folder": "all",
-  "q": "order 1042",
+  "from": "orders@example.com",
+  "subject": "Order",
+  "unread": true,
   "limit": 25
 }
 ```
@@ -413,6 +417,13 @@ Mail email-list filters:
 - `folder=spam`
 - `folder=drafts`
 - optional `q`
+- optional `from`
+- optional `to`
+- optional `subject`
+- optional `dateFrom`
+- optional `dateTo`
+- optional `unread`
+- optional `replied`
 - optional `folderPath`
 - optional `limit`
 

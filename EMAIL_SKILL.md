@@ -25,6 +25,7 @@ Use it when you need to:
 - generate an AI reply draft
 - reply to an existing thread
 - send a brand-new email
+- filter mailbox threads by sender, recipient, subject, date range, unread state, or replied state
 
 Do not use this skill for:
 
@@ -66,6 +67,17 @@ Supported views:
 - `new`
 - `waiting_for_reply`
 - `needs_reply`
+
+Supported filters on the `/emails` layer:
+
+- `q`
+- `from`
+- `to`
+- `subject`
+- `dateFrom`
+- `dateTo`
+- `unread`
+- `replied`
 
 ## Authentication
 
@@ -137,7 +149,7 @@ MCP tools:
 
 1. Find or create the mailbox.
 2. List emails with `folder` and `view`.
-3. Use `search_emails` when you need sender/subject/free-text narrowing.
+3. Use `search_emails` when you need sender, recipient, subject, free-text, date range, unread-state, or replied-state narrowing.
 4. Open the thread with `get_email_thread`.
 5. If needed, generate an AI reply and save a draft.
 6. Reply to the thread or send a brand-new email.
@@ -162,5 +174,6 @@ Goal: send a brand-new outbound email.
 - Prefer `folder` over raw `folderPath` unless you specifically need a provider IMAP path.
 - Treat `/emails` as the default inbox surface.
 - Use `view=all&folder=all` for the broadest mailbox pull.
+- Use `from`, `to`, `subject`, `dateFrom`, `dateTo`, `unread`, and `replied` instead of rebuilding thread filters client-side.
 - Use `market-kit://openapi` or `/api/v1/openapi.json` when payload shape is unclear.
 - Keep IDs exact and never invent `mailbox_...` or `thread_...` values.
