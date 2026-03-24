@@ -11,6 +11,7 @@ This repo contains:
 
 - A REST API under `/api/v1`
 - A remote Streamable HTTP MCP server under `/mcp`
+- First-class Mail support for mailbox management, folder browsing, thread triage, drafts, AI replies, and sending replies
 
 Both use the same bearer API key.
 

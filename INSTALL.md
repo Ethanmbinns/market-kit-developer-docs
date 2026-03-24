@@ -9,6 +9,7 @@ It covers:
 - Local MCP server setup
 - Client configuration
 - First-run verification
+- Mail REST and MCP capabilities
 
 ## What you are installing
 
@@ -18,6 +19,8 @@ Market Kit exposes two connected pieces:
 2. A remote Streamable HTTP MCP server under `/mcp`
 
 The MCP server is a thin adapter over the REST API. It uses the same bearer API key and exposes Market Kit actions as MCP tools and resources.
+
+Mail is included in that same surface, including mailbox management, folder listing, thread triage views, per-thread drafts, AI reply drafting, and send-reply flows.
 
 ## Prerequisites
 
@@ -201,6 +204,7 @@ Then verify the MCP server through your client by checking:
 - Resource: `market-kit://openapi`
 - Resource: `market-kit://docs/examples`
 - Tool: `list_brands`
+- Tool: `list_mail_threads`
 
 If those work, the install is good.
 
@@ -242,6 +246,55 @@ args: {
 }
 ```
 
+### Fast start with Mail over REST
+
+List mailbox threads that are waiting for a reply:
+
+```bash
+curl "https://your-convex-site/api/v1/mailboxes/mailbox_xxx/threads?view=waiting_for_reply&limit=25" \
+  -H "Authorization: Bearer <YOUR_API_KEY>"
+```
+
+Save a draft for a thread:
+
+```bash
+curl -X PUT "https://your-convex-site/api/v1/mailboxes/mailbox_xxx/threads/thread_xxx/draft" \
+  -H "Authorization: Bearer <YOUR_API_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mode": "replyAll",
+    "to": ["customer@example.com"],
+    "cc": ["support@example.com"],
+    "subject": "Re: Order #1042",
+    "body": "Thanks for the update. We have checked the order and will follow up shortly.",
+    "attachments": []
+  }'
+```
+
+### Fast start with Mail over MCP
+
+List triaged mail threads:
+
+```json
+tool: list_mail_threads
+args: {
+  "mailboxId": "mailbox_123",
+  "view": "waiting_for_reply",
+  "limit": 25
+}
+```
+
+Generate an AI reply draft:
+
+```json
+tool: generate_ai_mail_reply
+args: {
+  "mailboxId": "mailbox_123",
+  "threadId": "thread_123",
+  "mode": "replyAll"
+}
+```
+
 ## Complex onboarding example
 
 This is a good full-system smoke test for a new AI client:
@@ -259,6 +312,37 @@ If you prefer AI-generated content instead of a manual post:
 2. Poll with `get_asset_generation_job`.
 3. When the job completes, call `list_posts`.
 4. Schedule one of the generated posts.
+
+## Mail capability checklist
+
+Current Mail REST routes:
+
+- `GET /brands/{brandId}/mailboxes`
+- `POST /brands/{brandId}/mailboxes/discover`
+- `POST /brands/{brandId}/mailboxes/test`
+- `POST /brands/{brandId}/mailboxes`
+- `GET /mailboxes/{mailboxId}`
+- `PATCH /mailboxes/{mailboxId}`
+- `DELETE /mailboxes/{mailboxId}`
+- `POST /mailboxes/{mailboxId}/attachments/upload-url`
+- `GET /mailboxes/{mailboxId}/folders`
+- `GET /mailboxes/{mailboxId}/threads`
+- `GET /mailboxes/{mailboxId}/threads/{threadId}`
+- `GET /mailboxes/{mailboxId}/threads/{threadId}/draft`
+- `PUT /mailboxes/{mailboxId}/threads/{threadId}/draft`
+- `DELETE /mailboxes/{mailboxId}/threads/{threadId}/draft`
+- `POST /mailboxes/{mailboxId}/threads/{threadId}/ai-reply`
+- `POST /mailboxes/{mailboxId}/threads/{threadId}/send-reply`
+
+Mail thread list filters:
+
+- `view=all`
+- `view=unread`
+- `view=new`
+- `view=waiting_for_reply`
+- `view=needs_reply`
+- optional `folderPath`
+- optional `limit`
 
 ## Common problems
 

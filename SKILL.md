@@ -16,6 +16,9 @@ Use it when you need to:
 - Create, list, update, or delete brands
 - Create, list, update, or delete campaigns
 - Create, list, update, or delete posts
+- Create, test, update, or delete mailboxes
+- Browse mailbox folders and triage threads
+- Save drafts, generate AI replies, and send replies
 - Schedule or reschedule posts
 - Start asset generation jobs and poll their status
 - Create a brand draft from a website
@@ -25,7 +28,7 @@ Use it when you need to:
 Do not use this skill for:
 
 - Auth sign-in flows
-- Billing, admin, or mail features
+- Billing or admin features
 - Social account OAuth connection setup
 
 Those are intentionally outside this developer surface.
@@ -38,6 +41,8 @@ Common ID prefixes:
 
 - `brand_...`
 - `campaign_...`
+- `mailbox_...`
+- `thread_...`
 - `post_...`
 - `schedule_...`
 - `job_...`
@@ -90,6 +95,22 @@ Key routes:
 - `GET /brands/{brandId}/campaigns`
 - `POST /brands/{brandId}/campaigns`
 - `GET /brands/{brandId}/social-accounts`
+- `GET /brands/{brandId}/mailboxes`
+- `POST /brands/{brandId}/mailboxes/discover`
+- `POST /brands/{brandId}/mailboxes/test`
+- `POST /brands/{brandId}/mailboxes`
+- `GET /mailboxes/{mailboxId}`
+- `PATCH /mailboxes/{mailboxId}`
+- `DELETE /mailboxes/{mailboxId}`
+- `POST /mailboxes/{mailboxId}/attachments/upload-url`
+- `GET /mailboxes/{mailboxId}/folders`
+- `GET /mailboxes/{mailboxId}/threads`
+- `GET /mailboxes/{mailboxId}/threads/{threadId}`
+- `GET /mailboxes/{mailboxId}/threads/{threadId}/draft`
+- `PUT /mailboxes/{mailboxId}/threads/{threadId}/draft`
+- `DELETE /mailboxes/{mailboxId}/threads/{threadId}/draft`
+- `POST /mailboxes/{mailboxId}/threads/{threadId}/ai-reply`
+- `POST /mailboxes/{mailboxId}/threads/{threadId}/send-reply`
 - `GET /campaigns/{campaignId}`
 - `PATCH /campaigns/{campaignId}`
 - `DELETE /campaigns/{campaignId}`
@@ -144,6 +165,22 @@ MCP tools:
 - `update_post`
 - `delete_post`
 - `list_social_accounts`
+- `list_mailboxes`
+- `discover_mailbox_settings`
+- `test_mailbox_settings`
+- `create_mailbox`
+- `get_mailbox`
+- `update_mailbox`
+- `delete_mailbox`
+- `create_mail_attachment_upload_url`
+- `list_mail_folders`
+- `list_mail_threads`
+- `get_mail_thread`
+- `get_mail_draft`
+- `save_mail_draft`
+- `clear_mail_draft`
+- `generate_ai_mail_reply`
+- `send_mail_reply`
 - `list_schedules`
 - `schedule_post`
 - `reschedule_post`
@@ -157,11 +194,12 @@ MCP tools:
 When operating through this toolset, prefer this order:
 
 1. List or create the brand.
-2. Create or find the campaign.
-3. Create or find the post.
-4. If needed, list social accounts before scheduling.
-5. Schedule the post.
-6. If generating assets, start the job and poll until complete.
+2. If you are doing mail work, create or find the mailbox and list its folders or threads.
+3. If you are doing content work, create or find the campaign.
+4. Create or find the post.
+5. If needed, list social accounts before scheduling.
+6. Schedule the post.
+7. If generating assets, start the job and poll until complete.
 
 When you are uncertain about payload shape:
 
