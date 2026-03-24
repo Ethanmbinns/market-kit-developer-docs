@@ -9,6 +9,7 @@ It covers:
 - Local MCP server setup
 - Client configuration
 - First-run verification
+- Posts and Email skill guidance
 - Mail REST and MCP capabilities
 
 ## What you are installing
@@ -21,6 +22,12 @@ Market Kit exposes two connected pieces:
 The MCP server is a thin adapter over the REST API. It uses the same bearer API key and exposes Market Kit actions as MCP tools and resources.
 
 Mail is included in that same surface, including mailbox management, folder listing, inbox-style email listing, stable system-folder filtering, search, per-thread drafts, AI reply drafting, reply flows, and sending new outbound email.
+
+Recommended agent setup:
+
+- Use `POSTS_SKILL.md` for content workflows like brands, campaigns, posts, asset generation, remix, and scheduling.
+- Use `EMAIL_SKILL.md` for mailbox workflows like inbox listing, search, draft generation, replies, and sending new emails.
+- Load both only when a task genuinely crosses both domains.
 
 ## Prerequisites
 
@@ -207,6 +214,26 @@ Then verify the MCP server through your client by checking:
 - Tool: `list_emails`
 
 If those work, the install is good.
+
+## Recommended skill setup
+
+For agent and automation work, prefer splitting Market Kit usage into two skills instead of one large combined prompt:
+
+- `POSTS_SKILL.md`
+- `EMAIL_SKILL.md`
+
+Why this is recommended:
+
+- smaller context windows
+- clearer tool selection
+- less accidental cross-domain reasoning
+- easier workflow prompting for agents
+
+Good pattern:
+
+- load only `POSTS_SKILL.md` for content creation and scheduling tasks
+- load only `EMAIL_SKILL.md` for inbox and mailbox tasks
+- load both only for workflows that really bridge content and email
 
 ## Fast start examples
 
@@ -465,8 +492,9 @@ When an AI connects for the first time, the safest startup flow is:
 
 1. Read `market-kit://openapi`
 2. Read `market-kit://docs/examples`
-3. Call `list_brands`
-4. If no brands exist, decide whether to:
+3. Load `POSTS_SKILL.md`, `EMAIL_SKILL.md`, or both depending on the task
+4. Call `list_brands`
+5. If no brands exist, decide whether to:
    - use `create_brand` with known fields
    - or use `research_brand_from_website`
 

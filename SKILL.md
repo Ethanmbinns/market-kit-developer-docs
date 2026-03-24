@@ -1,556 +1,61 @@
 # Market Kit Developer API and MCP Skill
 
-Use this skill when you need to operate Market Kit programmatically through its developer surface.
+Use this file as the top-level router for Market Kit skills.
 
-This skill covers two related interfaces:
+Market Kit now exposes two primary agent workflows, and they work better when they are documented and loaded separately:
 
-- The REST API served from Convex HTTP actions under `/api/v1`
-- The remote Streamable HTTP MCP server served from `/mcp`
+- `POSTS_SKILL.md`
+- `EMAIL_SKILL.md`
 
-Both interfaces use the same bearer API key and the same underlying resource model.
+## Recommended split
 
-## When to use this skill
+Use `POSTS_SKILL.md` when the agent is focused on:
 
-Use it when you need to:
+- brands
+- campaigns
+- posts
+- schedules
+- asset generation
+- remix
 
-- Create, list, update, or delete brands
-- Create, list, update, or delete campaigns
-- Create, list, update, or delete posts
-- Create, test, update, or delete mailboxes
-- Browse mailbox folders, list emails, search, and open email threads
-- Save drafts, generate AI replies, send replies, and send brand-new emails
-- Schedule or reschedule posts
-- Start asset generation jobs and poll their status
-- Create a brand draft from a website
-- Remix an existing post into a new one
-- Give another AI agent a reliable way to work with Market Kit over MCP
+Use `EMAIL_SKILL.md` when the agent is focused on:
 
-Do not use this skill for:
+- mailboxes
+- folders
+- inbox listing
+- search
+- drafts
+- replies
+- sending new emails
 
-- Auth sign-in flows
-- Billing or admin features
-- Social account OAuth connection setup
+This keeps agent context smaller and makes the operational model much clearer. It also reduces the chance that an automation meant for content creation starts reasoning from mail-specific tools, or vice versa.
 
-Those are intentionally outside this developer surface.
+## Shared contract
 
-## Mental model
+Both skills use the same developer surface:
 
-The external contract uses stable public IDs, not raw Convex document IDs.
+- REST API under `/api/v1`
+- Streamable HTTP MCP server under `/mcp`
+- bearer API keys
+- stable public IDs
 
-Common ID prefixes:
+If an agent needs both domains in one run, load both skills. Otherwise, prefer the narrower skill that matches the task.
 
-- `brand_...`
-- `campaign_...`
-- `mailbox_...`
-- `thread_...`
-- `post_...`
-- `schedule_...`
-- `job_...`
-- `key_...`
+## Start here
 
-The main hierarchy is:
+Before writing automation against Market Kit:
 
-1. A brand owns campaigns.
-2. A campaign owns posts.
-3. A post can have schedule history.
-4. A campaign can also have asset generation jobs.
+1. Read `INSTALL.md`
+2. Choose `POSTS_SKILL.md`, `EMAIL_SKILL.md`, or both
+3. Read `market-kit://openapi` or fetch `/api/v1/openapi.json`
+4. Read `market-kit://docs/examples`
 
-Important scheduling behavior:
+## Non-goals
 
-- `POST /posts/{postId}/schedules` behaves like an external schedule collection API.
-- Internally, it upserts the latest editable draft or scheduled record for that post.
-- Listing schedules still returns history.
+These skills do not cover:
 
-Important post update behavior:
+- auth sign-in flows
+- billing or admin features
+- social account OAuth linking setup
 
-- Updating a post can keep editable scheduled captions in sync.
-- If a schedule already has a custom caption, Market Kit preserves that custom caption instead of overwriting it.
-
-Important mail listing behavior:
-
-- Prefer the higher-level `/emails` routes and MCP email tools for agent workflows.
-- Prefer the stable `folder` selector over raw provider-specific `folderPath`.
-- Supported system folders are `all`, `inbox`, `sent`, `archive`, `spam`, and `drafts`.
-- `view=all&folder=all` is the broadest inbox listing shape.
-- `folderPath` still exists for provider-specific IMAP paths, but it should be the exception rather than the default.
-
-## Authentication
-
-All requests use:
-
-```http
-Authorization: Bearer <API_KEY>
-```
-
-API keys are user-scoped. They only expose data owned by that user.
-
-## REST API quick reference
-
-Base URL:
-
-```text
-https://<your-convex-site>/api/v1
-```
-
-Key routes:
-
-- `GET /brands`
-- `POST /brands`
-- `GET /brands/{brandId}`
-- `PATCH /brands/{brandId}`
-- `DELETE /brands/{brandId}`
-- `POST /brands/from-website`
-- `GET /brands/{brandId}/campaigns`
-- `POST /brands/{brandId}/campaigns`
-- `GET /brands/{brandId}/social-accounts`
-- `GET /brands/{brandId}/mailboxes`
-- `POST /brands/{brandId}/mailboxes/discover`
-- `POST /brands/{brandId}/mailboxes/test`
-- `POST /brands/{brandId}/mailboxes`
-- `GET /mailboxes/{mailboxId}`
-- `PATCH /mailboxes/{mailboxId}`
-- `DELETE /mailboxes/{mailboxId}`
-- `POST /mailboxes/{mailboxId}/attachments/upload-url`
-- `GET /mailboxes/{mailboxId}/folders`
-- `GET /mailboxes/{mailboxId}/emails`
-- `POST /mailboxes/{mailboxId}/emails/search`
-- `GET /mailboxes/{mailboxId}/emails/{threadId}`
-- `POST /mailboxes/{mailboxId}/emails/{threadId}/reply`
-- `POST /mailboxes/{mailboxId}/emails/send`
-- `GET /mailboxes/{mailboxId}/threads`
-- `GET /mailboxes/{mailboxId}/threads/{threadId}`
-- `GET /mailboxes/{mailboxId}/threads/{threadId}/draft`
-- `PUT /mailboxes/{mailboxId}/threads/{threadId}/draft`
-- `DELETE /mailboxes/{mailboxId}/threads/{threadId}/draft`
-- `POST /mailboxes/{mailboxId}/threads/{threadId}/ai-reply`
-- `POST /mailboxes/{mailboxId}/threads/{threadId}/send-reply`
-- `GET /campaigns/{campaignId}`
-- `PATCH /campaigns/{campaignId}`
-- `DELETE /campaigns/{campaignId}`
-- `GET /campaigns/{campaignId}/posts`
-- `POST /campaigns/{campaignId}/posts`
-- `GET /posts/{postId}`
-- `PATCH /posts/{postId}`
-- `DELETE /posts/{postId}`
-- `POST /posts/{postId}/remix`
-- `GET /schedules`
-- `GET /posts/{postId}/schedules`
-- `POST /posts/{postId}/schedules`
-- `PATCH /schedules/{scheduleId}`
-- `DELETE /schedules/{scheduleId}`
-- `POST /campaigns/{campaignId}/asset-generation-jobs`
-- `GET /asset-generation-jobs/{jobId}`
-- `GET /api-keys`
-- `POST /api-keys`
-- `DELETE /api-keys/{keyId}`
-- `GET /openapi.json`
-
-## MCP quick reference
-
-MCP transport:
-
-- Streamable HTTP
-
-MCP endpoint:
-
-```text
-https://<your-mcp-host>/mcp
-```
-
-MCP resources:
-
-- `market-kit://openapi`
-- `market-kit://docs/examples`
-
-MCP tools:
-
-- `list_brands`
-- `create_brand`
-- `update_brand`
-- `delete_brand`
-- `research_brand_from_website`
-- `list_campaigns`
-- `create_campaign`
-- `update_campaign`
-- `delete_campaign`
-- `list_posts`
-- `create_post`
-- `update_post`
-- `delete_post`
-- `list_social_accounts`
-- `list_mailboxes`
-- `discover_mailbox_settings`
-- `test_mailbox_settings`
-- `create_mailbox`
-- `get_mailbox`
-- `update_mailbox`
-- `delete_mailbox`
-- `create_mail_attachment_upload_url`
-- `list_mail_folders`
-- `list_emails`
-- `search_emails`
-- `get_email_thread`
-- `reply_to_email`
-- `send_email`
-- `list_mail_threads`
-- `get_mail_thread`
-- `get_mail_draft`
-- `save_mail_draft`
-- `clear_mail_draft`
-- `generate_ai_mail_reply`
-- `send_mail_reply`
-- `list_schedules`
-- `schedule_post`
-- `reschedule_post`
-- `cancel_schedule`
-- `start_asset_generation`
-- `get_asset_generation_job`
-- `remix_post`
-
-## Recommended workflow
-
-When operating through this toolset, prefer this order:
-
-1. List or create the brand.
-2. If you are doing mail work, create or find the mailbox and use the `/emails` layer first.
-3. If you are doing content work, create or find the campaign.
-4. Create or find the post.
-5. If needed, list social accounts before scheduling.
-6. Schedule the post.
-7. If generating assets, start the job and poll until complete.
-
-When you are uncertain about payload shape:
-
-1. Read `market-kit://openapi` if using MCP.
-2. Or fetch `/api/v1/openapi.json` if using REST.
-
-## Easy examples
-
-### Easy example 1: List brands over MCP
-
-Goal: find what brands the current API key can access.
-
-Use:
-
-```json
-tool: list_brands
-args: {}
-```
-
-Expected outcome:
-
-- A list of owned brands with public IDs like `brand_...`
-- Use those IDs in later campaign and social-account calls
-
-### Easy example 2: Create a brand over REST
-
-```bash
-curl -X POST "https://your-convex-site/api/v1/brands" \
-  -H "Authorization: Bearer <YOUR_API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Northstar Coffee",
-    "bio": "Single-origin coffee brand.",
-    "brandVoice": "Warm, grounded, clear.",
-    "brandDesignGuidelines": "Clean product framing, earthy tones, no heavy overlays.",
-    "colors": ["#2F241F", "#D9C1A5"],
-    "urls": ["https://northstar.example"]
-  }'
-```
-
-Use this when you already know the brand data and do not need website research first.
-
-### Easy example 3: Create a campaign and a manual post
-
-First create the campaign:
-
-```bash
-curl -X POST "https://your-convex-site/api/v1/brands/brand_xxx/campaigns" \
-  -H "Authorization: Bearer <YOUR_API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Spring Launch",
-    "description": "Launch campaign for the seasonal range."
-  }'
-```
-
-Then create the post:
-
-```bash
-curl -X POST "https://your-convex-site/api/v1/campaigns/campaign_xxx/posts" \
-  -H "Authorization: Bearer <YOUR_API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Morning brew",
-    "content": "Kick off the day with a smooth, chocolatey pour-over.",
-    "platform": "instagram",
-    "status": "Draft",
-    "imageUrl": "https://cdn.example.com/posts/morning-brew.jpg",
-    "imageRatio": "4:5",
-    "tags": ["instagram", "coffee"]
-  }'
-```
-
-## Complex examples
-
-### Complex example 1: Full launch workflow over MCP
-
-Goal: create a brand from a website, create a campaign, create a manual post, then schedule it.
-
-Suggested sequence:
-
-1. Research the brand:
-
-```json
-tool: research_brand_from_website
-args: {
-  "websiteUrl": "https://northstar.example"
-}
-```
-
-2. Create a campaign under the returned `brand.id`:
-
-```json
-tool: create_campaign
-args: {
-  "brandId": "brand_123",
-  "name": "Spring Launch",
-  "description": "Launch campaign for the seasonal product line."
-}
-```
-
-3. Create a post under the returned `campaign.id`:
-
-```json
-tool: create_post
-args: {
-  "campaignId": "campaign_123",
-  "title": "Morning brew",
-  "content": "Meet the new seasonal roast. Smooth body, cocoa finish, perfect for slow mornings.",
-  "platform": "instagram",
-  "imageUrl": "https://cdn.example.com/assets/spring-launch.jpg",
-  "imageRatio": "4:5",
-  "tags": ["launch", "seasonal", "coffee"]
-}
-```
-
-4. List linked social accounts before scheduling:
-
-```json
-tool: list_social_accounts
-args: {
-  "brandId": "brand_123"
-}
-```
-
-5. Schedule the post:
-
-```json
-tool: schedule_post
-args: {
-  "postId": "post_123",
-  "scheduledAt": 1774252800000,
-  "scheduledAtIso": "2026-03-22T10:00:00+00:00",
-  "scheduledTimeZone": "Europe/London",
-  "socialAccountIds": ["postforme_account_123"]
-}
-```
-
-Use this flow when you want deterministic content creation and explicit review at each stage.
-
-### Complex example 2: Start generation, poll, then schedule the chosen result
-
-Goal: use the AI-assisted generation workflow and only schedule after the job is complete.
-
-1. Start the asset generation job:
-
-```json
-tool: start_asset_generation
-args: {
-  "campaignId": "campaign_123",
-  "topic": "Spring launch content for single-origin coffee",
-  "platforms": ["instagram"],
-  "selectedReferenceAssetUrls": [
-    "https://cdn.example.com/references/brand-pack-hero.jpg"
-  ],
-  "productPageUrls": [
-    "https://northstar.example/products/spring-roast"
-  ]
-}
-```
-
-2. Capture the returned `job.id`, then poll:
-
-```json
-tool: get_asset_generation_job
-args: {
-  "jobId": "job_123"
-}
-```
-
-3. Repeat polling until the job reports completion.
-
-4. List campaign posts:
-
-```json
-tool: list_posts
-args: {
-  "campaignId": "campaign_123"
-}
-```
-
-5. Pick the generated post you want, then schedule it with `schedule_post`.
-
-Use this flow when the creative asset should come from Market Kit's AI pipeline rather than a manually supplied image URL.
-
-### Complex example 3: Safe update and reschedule flow
-
-Goal: update post copy, preserve any custom schedule caption, and then move the publish time.
-
-1. Update the post:
-
-```json
-tool: update_post
-args: {
-  "postId": "post_123",
-  "content": "A brighter morning cup with citrus top notes and a rich cocoa finish."
-}
-```
-
-2. Inspect schedule history:
-
-```json
-tool: list_schedules
-args: {
-  "from": 1774000000000,
-  "to": 1775000000000
-}
-```
-
-3. Reschedule the editable schedule:
-
-```json
-tool: reschedule_post
-args: {
-  "scheduleId": "schedule_123",
-  "scheduledAt": 1774339200000,
-  "scheduledAtIso": "2026-03-23T10:00:00+00:00",
-  "scheduledTimeZone": "Europe/London"
-}
-```
-
-Use this when you need to adjust copy and timing without recreating the post from scratch.
-
-### Complex example 4: Mail triage, draft generation, and send
-
-Goal: find a thread that needs a reply, generate a draft, optionally save edits, and send it.
-
-1. List mailbox emails using stable folder + view filters:
-
-```json
-tool: list_emails
-args: {
-  "mailboxId": "mailbox_123",
-  "folder": "inbox",
-  "view": "waiting_for_reply",
-  "limit": 25
-}
-```
-
-2. Fetch the thread if you need full message detail:
-
-```json
-tool: get_email_thread
-args: {
-  "mailboxId": "mailbox_123",
-  "threadId": "thread_123",
-  "folder": "inbox"
-}
-```
-
-3. Generate an AI draft:
-
-```json
-tool: generate_ai_mail_reply
-args: {
-  "mailboxId": "mailbox_123",
-  "threadId": "thread_123",
-  "mode": "replyAll"
-}
-```
-
-4. Save any manual edits:
-
-```json
-tool: save_mail_draft
-args: {
-  "mailboxId": "mailbox_123",
-  "threadId": "thread_123",
-  "mode": "replyAll",
-  "to": ["customer@example.com"],
-  "cc": ["support@example.com"],
-  "subject": "Re: Order #1042",
-  "body": "Thanks for the update. We've checked the order and will follow up shortly.",
-  "attachments": []
-}
-```
-
-5. Send the reply:
-
-```json
-tool: reply_to_email
-args: {
-  "mailboxId": "mailbox_123",
-  "threadId": "thread_123",
-  "to": ["customer@example.com"],
-  "subject": "Re: Order #1042",
-  "body": "Thanks for the update. We've checked the order and will follow up shortly.",
-  "attachments": []
-}
-```
-
-Use this when you need reliable, agent-safe mailbox workflows without reconstructing thread logic yourself.
-
-### Complex example 5: Send a brand-new email
-
-Goal: send an outbound email that is not a reply to an existing thread.
-
-```json
-tool: send_email
-args: {
-  "mailboxId": "mailbox_123",
-  "to": ["customer@example.com"],
-  "cc": [],
-  "bcc": [],
-  "subject": "Checking in on your order",
-  "body": "Hi there,\n\nJust checking in with an update on your order. Let us know if you need anything else.\n\nBest,\nSupport",
-  "attachments": []
-}
-```
-
-Use this when you want the mailbox to behave like a normal outbound human inbox, not only as a reply surface.
-
-## Error handling guidance
-
-If a request fails:
-
-- Treat `401` as a missing, malformed, revoked, or invalid bearer API key.
-- Treat `404` as a missing resource or a resource not owned by the current user.
-- Treat `400` as an invalid payload or unsupported state transition.
-- Read the JSON error message and use it verbatim when it is user-safe.
-
-For AI agent behavior:
-
-- Do not invent IDs. Always reuse real `brand_`, `campaign_`, `post_`, `schedule_`, and `job_` values returned by the API.
-- Prefer list or fetch calls before mutation when context is ambiguous.
-- Use OpenAPI or `market-kit://docs/examples` to recover exact request shapes.
-- Use the documented workflow examples when you need a safe multi-step sequence instead of inferring one.
-- When scheduling, confirm that linked social accounts already exist. This surface does not perform the social OAuth linking flow.
-
-## Best practices
-
-- Prefer MCP when you want an AI agent to reason over tool outputs directly.
-- Prefer REST when integrating with scripts, CI, or other backends.
-- Use explicit website research only when a brand needs to be bootstrapped from a URL.
-- Store API keys securely and treat the secret as write-capable user access.
-- Revoke keys instead of reusing stale shared credentials.
+Those remain outside the public developer surface.
