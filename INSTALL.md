@@ -20,7 +20,7 @@ Market Kit exposes two connected pieces:
 
 The MCP server is a thin adapter over the REST API. It uses the same bearer API key and exposes Market Kit actions as MCP tools and resources.
 
-Mail is included in that same surface, including mailbox management, folder listing, thread triage views, per-thread drafts, AI reply drafting, and send-reply flows.
+Mail is included in that same surface, including mailbox management, folder listing, stable system-folder filtering, thread triage views, per-thread drafts, AI reply drafting, and send-reply flows.
 
 ## Prerequisites
 
@@ -248,10 +248,17 @@ args: {
 
 ### Fast start with Mail over REST
 
-List mailbox threads that are waiting for a reply:
+List mailbox threads that are waiting for a reply from the Inbox system folder:
 
 ```bash
-curl "https://your-convex-site/api/v1/mailboxes/mailbox_xxx/threads?view=waiting_for_reply&limit=25" \
+curl "https://your-convex-site/api/v1/mailboxes/mailbox_xxx/threads?view=waiting_for_reply&folder=inbox&limit=25" \
+  -H "Authorization: Bearer <YOUR_API_KEY>"
+```
+
+List all mailbox threads with the stable `all` folder selector:
+
+```bash
+curl "https://your-convex-site/api/v1/mailboxes/mailbox_xxx/threads?folder=all&view=all&limit=50" \
   -H "Authorization: Bearer <YOUR_API_KEY>"
 ```
 
@@ -279,6 +286,7 @@ List triaged mail threads:
 tool: list_mail_threads
 args: {
   "mailboxId": "mailbox_123",
+  "folder": "inbox",
   "view": "waiting_for_reply",
   "limit": 25
 }
@@ -341,8 +349,35 @@ Mail thread list filters:
 - `view=new`
 - `view=waiting_for_reply`
 - `view=needs_reply`
+- `folder=all`
+- `folder=inbox`
+- `folder=sent`
+- `folder=archive`
+- `folder=spam`
+- `folder=drafts`
 - optional `folderPath`
 - optional `limit`
+
+Recommended usage:
+
+- Prefer `folder` for stable cross-provider mailbox views.
+- Use raw `folderPath` only when you need a provider-specific IMAP path.
+- `view=all&folder=all` is the broadest thread listing shape.
+
+## Workflow examples worth checking first
+
+The live OpenAPI and MCP docs examples now include workflow sequences for:
+
+- create brand → create campaign → create post → generate asset → schedule
+- list mailbox → list threads → generate draft → send reply
+- build social content from website
+- regenerate failed asset
+- reschedule a queued post
+
+You can inspect those through:
+
+- REST: `/api/v1/openapi.json`
+- MCP resource: `market-kit://docs/examples`
 
 ## Common problems
 

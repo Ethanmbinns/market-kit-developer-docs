@@ -66,6 +66,13 @@ Important post update behavior:
 - Updating a post can keep editable scheduled captions in sync.
 - If a schedule already has a custom caption, Market Kit preserves that custom caption instead of overwriting it.
 
+Important mail listing behavior:
+
+- Prefer the stable `folder` selector over raw provider-specific `folderPath`.
+- Supported system folders are `all`, `inbox`, `sent`, `archive`, `spam`, and `drafts`.
+- `view=all&folder=all` is the broadest thread listing shape.
+- `folderPath` still exists for provider-specific IMAP paths, but it should be the exception rather than the default.
+
 ## Authentication
 
 All requests use:
@@ -423,6 +430,76 @@ args: {
 
 Use this when you need to adjust copy and timing without recreating the post from scratch.
 
+### Complex example 4: Mail triage, draft generation, and send
+
+Goal: find a thread that needs a reply, generate a draft, optionally save edits, and send it.
+
+1. List mailbox threads using stable folder + view filters:
+
+```json
+tool: list_mail_threads
+args: {
+  "mailboxId": "mailbox_123",
+  "folder": "inbox",
+  "view": "waiting_for_reply",
+  "limit": 25
+}
+```
+
+2. Fetch the thread if you need full message detail:
+
+```json
+tool: get_mail_thread
+args: {
+  "mailboxId": "mailbox_123",
+  "threadId": "thread_123",
+  "folder": "inbox"
+}
+```
+
+3. Generate an AI draft:
+
+```json
+tool: generate_ai_mail_reply
+args: {
+  "mailboxId": "mailbox_123",
+  "threadId": "thread_123",
+  "mode": "replyAll"
+}
+```
+
+4. Save any manual edits:
+
+```json
+tool: save_mail_draft
+args: {
+  "mailboxId": "mailbox_123",
+  "threadId": "thread_123",
+  "mode": "replyAll",
+  "to": ["customer@example.com"],
+  "cc": ["support@example.com"],
+  "subject": "Re: Order #1042",
+  "body": "Thanks for the update. We've checked the order and will follow up shortly.",
+  "attachments": []
+}
+```
+
+5. Send the reply:
+
+```json
+tool: send_mail_reply
+args: {
+  "mailboxId": "mailbox_123",
+  "threadId": "thread_123",
+  "to": ["customer@example.com"],
+  "subject": "Re: Order #1042",
+  "body": "Thanks for the update. We've checked the order and will follow up shortly.",
+  "attachments": []
+}
+```
+
+Use this when you need reliable, agent-safe mailbox workflows without reconstructing thread logic yourself.
+
 ## Error handling guidance
 
 If a request fails:
@@ -437,6 +514,7 @@ For AI agent behavior:
 - Do not invent IDs. Always reuse real `brand_`, `campaign_`, `post_`, `schedule_`, and `job_` values returned by the API.
 - Prefer list or fetch calls before mutation when context is ambiguous.
 - Use OpenAPI or `market-kit://docs/examples` to recover exact request shapes.
+- Use the documented workflow examples when you need a safe multi-step sequence instead of inferring one.
 - When scheduling, confirm that linked social accounts already exist. This surface does not perform the social OAuth linking flow.
 
 ## Best practices
