@@ -17,8 +17,8 @@ Use it when you need to:
 - Create, list, update, or delete campaigns
 - Create, list, update, or delete posts
 - Create, test, update, or delete mailboxes
-- Browse mailbox folders and triage threads
-- Save drafts, generate AI replies, and send replies
+- Browse mailbox folders, list emails, search, and open email threads
+- Save drafts, generate AI replies, send replies, and send brand-new emails
 - Schedule or reschedule posts
 - Start asset generation jobs and poll their status
 - Create a brand draft from a website
@@ -68,9 +68,10 @@ Important post update behavior:
 
 Important mail listing behavior:
 
+- Prefer the higher-level `/emails` routes and MCP email tools for agent workflows.
 - Prefer the stable `folder` selector over raw provider-specific `folderPath`.
 - Supported system folders are `all`, `inbox`, `sent`, `archive`, `spam`, and `drafts`.
-- `view=all&folder=all` is the broadest thread listing shape.
+- `view=all&folder=all` is the broadest inbox listing shape.
 - `folderPath` still exists for provider-specific IMAP paths, but it should be the exception rather than the default.
 
 ## Authentication
@@ -111,6 +112,11 @@ Key routes:
 - `DELETE /mailboxes/{mailboxId}`
 - `POST /mailboxes/{mailboxId}/attachments/upload-url`
 - `GET /mailboxes/{mailboxId}/folders`
+- `GET /mailboxes/{mailboxId}/emails`
+- `POST /mailboxes/{mailboxId}/emails/search`
+- `GET /mailboxes/{mailboxId}/emails/{threadId}`
+- `POST /mailboxes/{mailboxId}/emails/{threadId}/reply`
+- `POST /mailboxes/{mailboxId}/emails/send`
 - `GET /mailboxes/{mailboxId}/threads`
 - `GET /mailboxes/{mailboxId}/threads/{threadId}`
 - `GET /mailboxes/{mailboxId}/threads/{threadId}/draft`
@@ -181,6 +187,11 @@ MCP tools:
 - `delete_mailbox`
 - `create_mail_attachment_upload_url`
 - `list_mail_folders`
+- `list_emails`
+- `search_emails`
+- `get_email_thread`
+- `reply_to_email`
+- `send_email`
 - `list_mail_threads`
 - `get_mail_thread`
 - `get_mail_draft`
@@ -201,7 +212,7 @@ MCP tools:
 When operating through this toolset, prefer this order:
 
 1. List or create the brand.
-2. If you are doing mail work, create or find the mailbox and list its folders or threads.
+2. If you are doing mail work, create or find the mailbox and use the `/emails` layer first.
 3. If you are doing content work, create or find the campaign.
 4. Create or find the post.
 5. If needed, list social accounts before scheduling.
@@ -434,10 +445,10 @@ Use this when you need to adjust copy and timing without recreating the post fro
 
 Goal: find a thread that needs a reply, generate a draft, optionally save edits, and send it.
 
-1. List mailbox threads using stable folder + view filters:
+1. List mailbox emails using stable folder + view filters:
 
 ```json
-tool: list_mail_threads
+tool: list_emails
 args: {
   "mailboxId": "mailbox_123",
   "folder": "inbox",
@@ -449,7 +460,7 @@ args: {
 2. Fetch the thread if you need full message detail:
 
 ```json
-tool: get_mail_thread
+tool: get_email_thread
 args: {
   "mailboxId": "mailbox_123",
   "threadId": "thread_123",
@@ -487,7 +498,7 @@ args: {
 5. Send the reply:
 
 ```json
-tool: send_mail_reply
+tool: reply_to_email
 args: {
   "mailboxId": "mailbox_123",
   "threadId": "thread_123",
@@ -499,6 +510,25 @@ args: {
 ```
 
 Use this when you need reliable, agent-safe mailbox workflows without reconstructing thread logic yourself.
+
+### Complex example 5: Send a brand-new email
+
+Goal: send an outbound email that is not a reply to an existing thread.
+
+```json
+tool: send_email
+args: {
+  "mailboxId": "mailbox_123",
+  "to": ["customer@example.com"],
+  "cc": [],
+  "bcc": [],
+  "subject": "Checking in on your order",
+  "body": "Hi there,\n\nJust checking in with an update on your order. Let us know if you need anything else.\n\nBest,\nSupport",
+  "attachments": []
+}
+```
+
+Use this when you want the mailbox to behave like a normal outbound human inbox, not only as a reply surface.
 
 ## Error handling guidance
 

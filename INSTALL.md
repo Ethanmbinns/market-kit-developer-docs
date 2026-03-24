@@ -20,7 +20,7 @@ Market Kit exposes two connected pieces:
 
 The MCP server is a thin adapter over the REST API. It uses the same bearer API key and exposes Market Kit actions as MCP tools and resources.
 
-Mail is included in that same surface, including mailbox management, folder listing, stable system-folder filtering, thread triage views, per-thread drafts, AI reply drafting, and send-reply flows.
+Mail is included in that same surface, including mailbox management, folder listing, inbox-style email listing, stable system-folder filtering, search, per-thread drafts, AI reply drafting, reply flows, and sending new outbound email.
 
 ## Prerequisites
 
@@ -204,7 +204,7 @@ Then verify the MCP server through your client by checking:
 - Resource: `market-kit://openapi`
 - Resource: `market-kit://docs/examples`
 - Tool: `list_brands`
-- Tool: `list_mail_threads`
+- Tool: `list_emails`
 
 If those work, the install is good.
 
@@ -248,18 +248,31 @@ args: {
 
 ### Fast start with Mail over REST
 
-List mailbox threads that are waiting for a reply from the Inbox system folder:
+List mailbox emails that are waiting for a reply from the Inbox system folder:
 
 ```bash
-curl "https://your-convex-site/api/v1/mailboxes/mailbox_xxx/threads?view=waiting_for_reply&folder=inbox&limit=25" \
+curl "https://your-convex-site/api/v1/mailboxes/mailbox_xxx/emails?view=waiting_for_reply&folder=inbox&limit=25" \
   -H "Authorization: Bearer <YOUR_API_KEY>"
 ```
 
-List all mailbox threads with the stable `all` folder selector:
+List all mailbox emails with the stable `all` folder selector:
 
 ```bash
-curl "https://your-convex-site/api/v1/mailboxes/mailbox_xxx/threads?folder=all&view=all&limit=50" \
+curl "https://your-convex-site/api/v1/mailboxes/mailbox_xxx/emails?folder=all&view=all&limit=50" \
   -H "Authorization: Bearer <YOUR_API_KEY>"
+```
+
+Search mailbox emails:
+
+```bash
+curl -X POST "https://your-convex-site/api/v1/mailboxes/mailbox_xxx/emails/search" \
+  -H "Authorization: Bearer <YOUR_API_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "folder": "all",
+    "q": "order 1042",
+    "limit": 25
+  }'
 ```
 
 Save a draft for a thread:
@@ -280,14 +293,26 @@ curl -X PUT "https://your-convex-site/api/v1/mailboxes/mailbox_xxx/threads/threa
 
 ### Fast start with Mail over MCP
 
-List triaged mail threads:
+List triaged emails:
 
 ```json
-tool: list_mail_threads
+tool: list_emails
 args: {
   "mailboxId": "mailbox_123",
   "folder": "inbox",
   "view": "waiting_for_reply",
+  "limit": 25
+}
+```
+
+Search emails:
+
+```json
+tool: search_emails
+args: {
+  "mailboxId": "mailbox_123",
+  "folder": "all",
+  "q": "order 1042",
   "limit": 25
 }
 ```
@@ -334,6 +359,11 @@ Current Mail REST routes:
 - `DELETE /mailboxes/{mailboxId}`
 - `POST /mailboxes/{mailboxId}/attachments/upload-url`
 - `GET /mailboxes/{mailboxId}/folders`
+- `GET /mailboxes/{mailboxId}/emails`
+- `POST /mailboxes/{mailboxId}/emails/search`
+- `GET /mailboxes/{mailboxId}/emails/{threadId}`
+- `POST /mailboxes/{mailboxId}/emails/{threadId}/reply`
+- `POST /mailboxes/{mailboxId}/emails/send`
 - `GET /mailboxes/{mailboxId}/threads`
 - `GET /mailboxes/{mailboxId}/threads/{threadId}`
 - `GET /mailboxes/{mailboxId}/threads/{threadId}/draft`
@@ -342,7 +372,7 @@ Current Mail REST routes:
 - `POST /mailboxes/{mailboxId}/threads/{threadId}/ai-reply`
 - `POST /mailboxes/{mailboxId}/threads/{threadId}/send-reply`
 
-Mail thread list filters:
+Mail email-list filters:
 
 - `view=all`
 - `view=unread`
@@ -355,14 +385,16 @@ Mail thread list filters:
 - `folder=archive`
 - `folder=spam`
 - `folder=drafts`
+- optional `q`
 - optional `folderPath`
 - optional `limit`
 
 Recommended usage:
 
+- Prefer `/emails` for the primary inbox workflow.
 - Prefer `folder` for stable cross-provider mailbox views.
 - Use raw `folderPath` only when you need a provider-specific IMAP path.
-- `view=all&folder=all` is the broadest thread listing shape.
+- `view=all&folder=all` is the broadest inbox listing shape.
 
 ## Workflow examples worth checking first
 
