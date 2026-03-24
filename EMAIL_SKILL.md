@@ -78,6 +78,7 @@ Supported filters on the `/emails` layer:
 - `dateTo`
 - `unread`
 - `replied`
+- `cursor`
 
 ## Authentication
 
@@ -175,5 +176,6 @@ Goal: send a brand-new outbound email.
 - Treat `/emails` as the default inbox surface.
 - Use `view=all&folder=all` for the broadest mailbox pull.
 - Use `from`, `to`, `subject`, `dateFrom`, `dateTo`, `unread`, and `replied` instead of rebuilding thread filters client-side.
+- Use `pageInfo.nextCursor` to continue paging when the first result slice is not deep enough.
 - Use `market-kit://openapi` or `/api/v1/openapi.json` when payload shape is unclear.
 - Keep IDs exact and never invent `mailbox_...` or `thread_...` values.

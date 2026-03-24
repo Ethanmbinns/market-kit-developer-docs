@@ -289,6 +289,13 @@ curl "https://your-convex-site/api/v1/mailboxes/mailbox_xxx/emails?folder=all&vi
   -H "Authorization: Bearer <YOUR_API_KEY>"
 ```
 
+Page deeper into mailbox emails:
+
+```bash
+curl "https://your-convex-site/api/v1/mailboxes/mailbox_xxx/emails?folder=inbox&view=all&cursor=mail_250" \
+  -H "Authorization: Bearer <YOUR_API_KEY>"
+```
+
 Search mailbox emails:
 
 ```bash
@@ -426,6 +433,7 @@ Mail email-list filters:
 - optional `replied`
 - optional `folderPath`
 - optional `limit`
+- optional `cursor`
 
 Recommended usage:
 
@@ -433,6 +441,7 @@ Recommended usage:
 - Prefer `folder` for stable cross-provider mailbox views.
 - Use raw `folderPath` only when you need a provider-specific IMAP path.
 - `view=all&folder=all` is the broadest inbox listing shape.
+- Use `pageInfo.nextCursor` to keep paging deeper when the first mailbox slice does not contain the email you need.
 
 ## Workflow examples worth checking first
 
